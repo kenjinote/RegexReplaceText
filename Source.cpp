@@ -14,7 +14,7 @@ void Replace(HWND hWnd, LPCTSTR lpszFilePath, LPCWSTR lpszFindText, LPCWSTR lpsz
 	if (hFile != INVALID_HANDLE_VALUE)
 	{
 		DWORD dwFileSize = GetFileSize(hFile, 0);
-		LPSTR lpszText = (LPSTR)GlobalAlloc(GPTR, dwFileSize + sizeof(WCHAR) * 16); // 16 文字分は予備
+		LPBYTE lpszText = (LPBYTE)GlobalAlloc(GPTR, dwFileSize + sizeof(WCHAR) * 16); // 16 文字分は予備
 		DWORD dwReadSize;
 		ReadFile(hFile, lpszText, dwFileSize, &dwReadSize, 0);
 		int nCode = 0;
@@ -26,28 +26,32 @@ void Replace(HWND hWnd, LPCTSTR lpszFilePath, LPCWSTR lpszFindText, LPCWSTR lpsz
 		if (lpszText[0] == 0xEF && lpszText[1] == 0xBB && lpszText[2] == 0xBF)
 		{
 			nCode = 2;
-			const int nLength = MultiByteToWideChar(CP_UTF8, 0, lpszText, -1, 0, 0);
+			const int nLength = MultiByteToWideChar(CP_UTF8, 0, (LPCSTR)&(lpszText[3]), -1, 0, 0);
 			lpszNewStringW = (LPWSTR)GlobalAlloc(GPTR, nLength * sizeof(WCHAR));
-			MultiByteToWideChar(CP_UTF8, 0, lpszText, -1, lpszNewStringW, nLength);
+			MultiByteToWideChar(CP_UTF8, 0, (LPCSTR)&(lpszText[3]), -1, lpszNewStringW, nLength);
 		}
 		else if (lpszText[0] == 0xFF && lpszText[1] == 0xFE)
 		{
 			nCode = 1;
-			LPWSTR lpszUnicode = (LPWSTR)lpszText[2];
+			LPWSTR lpszUnicode = (LPWSTR)&(lpszText[2]);
 			lpszNewStringW = (LPWSTR)GlobalAlloc(GPTR, lstrlenW(lpszUnicode) * sizeof(WCHAR));
 			lstrcpyW(lpszNewStringW, lpszUnicode);
 		}
 		if (nCode == 0)
 		{
+			BOOL bShiftJIS = FALSE;
 			// Shif-JISかどうか判定
-			int nLength = MultiByteToWideChar(932, 0, lpszText, -1, 0, 0);
-			lpszNewStringW = (LPWSTR)GlobalAlloc(GPTR, nLength * sizeof(WCHAR));
-			MultiByteToWideChar(932, 0, lpszText, -1, lpszNewStringW, nLength);
-			nLength = WideCharToMultiByte(932, 0, lpszNewStringW, -1, 0, 0, 0, 0);
-			LPSTR lpszStringA = (LPSTR)GlobalAlloc(GPTR, nLength);
-			WideCharToMultiByte(932, 0, lpszNewStringW, -1, lpszStringA, nLength, 0, 0);
-			const BOOL bShiftJIS = (lstrcmpA(lpszText, lpszStringA) == 0);
-			GlobalFree(lpszStringA);
+			int nLength = MultiByteToWideChar(932, 0, (LPCSTR)lpszText, -1, 0, 0);
+			if (dwFileSize == nLength - 1)
+			{
+				lpszNewStringW = (LPWSTR)GlobalAlloc(GPTR, nLength * sizeof(WCHAR));
+				MultiByteToWideChar(932, 0, (LPCSTR)lpszText, -1, lpszNewStringW, nLength);
+				nLength = WideCharToMultiByte(932, 0, lpszNewStringW, -1, 0, 0, 0, 0);
+				LPSTR lpszStringA = (LPSTR)GlobalAlloc(GPTR, nLength);
+				WideCharToMultiByte(932, 0, lpszNewStringW, -1, lpszStringA, nLength, 0, 0);
+				bShiftJIS = (lstrcmpA((LPCSTR)lpszText, lpszStringA) == 0);
+				GlobalFree(lpszStringA);
+			}
 			if (bShiftJIS)
 			{
 				// Shif-JIS
