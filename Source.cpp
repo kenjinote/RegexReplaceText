@@ -102,10 +102,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			LPWSTR lpszText1 = (LPWSTR)GlobalAlloc(0, sizeof(WCHAR) * (dwSize1 + 1));
 			GetWindowTextW(hEdit1, lpszText1, dwSize1 + 1);
 			DWORD dwSize2 = GetWindowTextLengthW(hEdit2);
-			LPWSTR lpszText2 = (LPWSTR)GlobalAlloc(0, sizeof(WCHAR) * (dwSize2 + 2));
-			GetWindowTextW(hEdit2, lpszText2, dwSize2 + 2);
+			LPWSTR lpszText2 = (LPWSTR)GlobalAlloc(0, sizeof(WCHAR) * (dwSize2 + 1));
+			GetWindowTextW(hEdit2, lpszText2, dwSize2 + 1);
 			const int nFileCount = DragQueryFile((HDROP)wParam, -1, NULL, 0);
-			for (int i = 0; i<nFileCount; i++)
+			for (int i = 0; i < nFileCount; ++i)
 			{
 				TCHAR szFilePath[MAX_PATH];
 				DragQueryFile((HDROP)wParam, i, szFilePath, _countof(szFilePath));
